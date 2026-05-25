@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NCCU — Causal Inference & Data Science: Grade Portal</title>
+<style>
+  :root {
+    --primary: #2F5597;
+    --accent:  #4472C4;
+    --light:   #BDD7EE;
+    --bg:      #F4F7FB;
+    --card:    #ffffff;
+    --border:  #D0DCF0;
+    --text:    #1a1a2e;
+    --muted:   #5a6070;
+    --green:   #1e7e34;
+    --orange:  #b45309;
+    --red:     #9b1c1c;
+    --radius:  12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 80px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  header .course-tag {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+  }
+  header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.3;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 0.93rem;
+    margin-top: 8px;
+  }
+
+  .search-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px 40px 32px;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 4px 24px rgba(47,85,151,0.10);
+    margin-bottom: 32px;
+  }
+  .search-card label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--primary);
+    margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+  .search-card input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: var(--text);
+    background: #fafbff;
+    transition: border-color 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .search-card input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+  }
+  .search-card button {
+    padding: 12px 22px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .search-card button:hover { background: var(--accent); }
+  .search-card button:active { transform: scale(0.97); }
+
+  #error-msg {
+    display: none;
+    color: var(--red);
+    font-size: 0.88rem;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+  }
+
+  /* Results card */
+  #result-section {
+    display: none;
+    width: 100%;
+    max-width: 760px;
+    animation: fadeUp 0.35s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(47,85,151,0.10);
+    margin-bottom: 20px;
+  }
+
+  .result-header {
+    background: var(--primary);
+    color: #fff;
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .result-header .student-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+  .result-header .student-meta {
+    font-size: 0.82rem;
+    opacity: 0.8;
+    margin-top: 3px;
+  }
+
+  .grades-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--border);
+  }
+  .grade-cell {
+    background: var(--card);
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .grade-cell .label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+  }
+  .grade-cell .score {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary);
+  }
+  .grade-cell .score.pending {
+    font-size: 1rem;
+    color: #9ca3af;
+    font-weight: 500;
+    font-style: italic;
+  }
+  .grade-cell .score.grade-a-plus { color: #1e7e34; }
+  .grade-cell .score.grade-a      { color: #1d6f42; }
+  .grade-cell .score.grade-a-min  { color: #2e7d32; }
+  .grade-cell .score.grade-b-plus { color: #b45309; }
+  .grade-cell .score.grade-b      { color: #92400e; }
+  .grade-cell .score.grade-c      { color: #9b1c1c; }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+  }
+  .badge-aplus  { background: #d1fae5; color: #065f46; }
+  .badge-a      { background: #dcfce7; color: #166534; }
+  .badge-amin   { background: #e0f2fe; color: #075985; }
+  .badge-bplus  { background: #fef3c7; color: #92400e; }
+  .badge-b      { background: #ffedd5; color: #9a3412; }
+  .badge-c      { background: #fee2e2; color: #991b1b; }
+
+  /* Comments section */
+  .comment-section {
+    padding: 24px 28px;
+    border-top: 1px solid var(--border);
+  }
+  .comment-section h3 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .comment-block {
+    background: #f8fafd;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .comment-block .comment-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .comment-block p {
+    font-size: 0.92rem;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .pending-notice {
+    color: #9ca3af;
+    font-style: italic;
+    font-size: 0.88rem;
+  }
+
+  .scale-note {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  footer {
+    margin-top: 48px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="course-tag">NCCU · Spring 2026</div>
+  <h1>Causal Inference &amp; Data Science<br>in Economics</h1>
+  <p>Enter your student ID to view your grades and instructor feedback.</p>
+</header>
+
+<div class="search-card">
+  <label for="sid-input">Student ID</label>
+  <div class="input-row">
+    <input type="text" id="sid-input" placeholder="e.g. 114266008"
+           maxlength="12" autocomplete="off" inputmode="numeric"
+           onkeydown="if(event.key==='Enter') lookup()">
+    <button onclick="lookup()">Look up</button>
+  </div>
+  <div id="error-msg"></div>
+  <p class="scale-note" style="margin-top:14px;">
+    Grading scale: A+ = 95 · A = 85 · A− = 80 · B+ = 75 · B = 70 · C ≤ 60
+  </p>
+</div>
+
+<div id="result-section">
+  <div class="result-card">
+    <div class="result-header">
+      <div class="avatar" id="res-avatar"></div>
+      <div>
+        <div class="student-name" id="res-name"></div>
+        <div class="student-meta" id="res-meta"></div>
+      </div>
+    </div>
+
+    <div class="grades-grid" id="res-grades"></div>
+
+    <div class="comment-section" id="res-comments"></div>
+  </div>
+</div>
+
+<footer>
+  Prof. Tzu-Ting Yang &nbsp;·&nbsp; NCCU Department of Economics<br>
+  Course: 266908001 Causal Inference and Data Science in Economics
+</footer>
+
+<script>
+// ─── Grade data ─────────────────────────────────────────────────────────────
+const GRADES = {
+  "110208093": {
+    name: "Ting-Yen Chiu (邱庭妍)",
+    dept: "Economics, 4th Year",
+    hw1: { score: "A (85)", comments: "Excellent multi-dataset panel construction merging MDW permit data, county-level female population, and MUS survey records. Sophisticated Stata workflow with reshape, county-code mapping, and careful merge diagnostics. Strong data management skills demonstrated throughout." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "111208081": {
+    name: "Hsiang-Yun Yuan (袁湘芸)",
+    dept: "Economics, 4th Year",
+    hw1: { score: "A- (80)", comments: "Clean R analysis of education's effect on marriage using TSCS 2023. Thoughtful variable recoding (income bracket to midpoint, regional grouping). Well-presented regression progression showing that adding age renders the college coefficient insignificant — a substantively interesting finding." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114254001": {
+    name: "Kai-Jie Huang (黃楷捷)",
+    dept: "Sociology, MA Year 1",
+    hw1: { score: "A+ (95)", comments: "Exceptionally sophisticated analysis merging multiple government administrative datasets at the township level (population, education, low-income households, land data). Professional use of spatial data (sf package) and a highly modular coding style. Well above course expectations." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114258010": {
+    name: "Hsiao-Hsuan Chen (陳曉萱)",
+    dept: "Economics, MA Year 1",
+    hw1: { score: "A- (80)", comments: "Good panel construction using PSFD 2018/2020 waves. Step-by-step sample restrictions clearly documented with observation counts at each stage (12,086 → 3,436 → 2,476). Some conceptual sections (OVB formula, bad controls) could use fuller written explanations." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114258029": {
+    name: "Yi-Hsuan Hung (洪宜萱)",
+    dept: "Economics, MA Year 1",
+    hw1: { score: "A (85)", comments: "Well-structured Stata analysis on working hours and fertility intention. Careful sample selection (4,774 → 674) with each criterion explained. Clear regression table with controls. Figures are saved externally rather than embedded via markstat bundle — would be stronger with inline figures." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114258044": {
+    name: "Yan-Ting Chen (陳姸廷)",
+    dept: "Economics, MA Year 1",
+    hw1: { score: "B+ (75)", comments: "Clean R analysis on oil prices and Taiwan CPI inflation (2011–2025). Professional figures and regression output. The macro time-series topic limits the natural application of individual/firm fixed effects and makes the OVB causality discussion less sharp than a micro dataset would allow." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114258047": {
+    name: "Hao-Zhe Cheng (鄭澔哲)",
+    dept: "Economics, MA Year 1",
+    hw1: { score: "A- (80)", comments: "Solid R analysis on parental co-residence and fertility intention (PSFD 2024). Q3 correctly identifies that ~54% of outcomes are missing (only respondents with young children answer the fertility-plan question). Regressions from simple to FE are all executed well. Figure 1 shows the age distribution rather than the outcome or treatment variable." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114266007": {
+    name: "Chao-Kang Hsu (徐兆岡)",
+    dept: "Applied Sociology, Year 1",
+    hw1: { score: "C (60)", comments: "No submission found. Neither an HTML empirical record nor a PDF answer sheet was uploaded by the deadline (April 22). Please contact the instructor if there was a technical difficulty." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114266008": {
+    name: "Qian Li (李謙)",
+    dept: "Applied Sociology, Year 1",
+    hw1: { score: "A+ (95)", comments: "Outstanding DiD design examining ESG/carbon-emission disclosure effects on monthly stock returns. Large firm-month panel (~160k obs, 2021–2025). Proper firm and time fixed effects via feols with clustered standard errors. Advanced econometric approach that goes well beyond the baseline requirements." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114266009": {
+    name: "Chen-Hsi Hsiao (蕭辰晰)",
+    dept: "Applied Sociology, Year 1",
+    hw1: { score: "A- (80)", comments: "Creative self-collected dataset scraped from LINE Sticker Shop (576 sticker packs). Good full pipeline from data collection to regression. Official-IP stickers show significantly higher engagement (β ≈ 1.09***). Collinearity between ip_type and creator FE correctly identified and transparently reported." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114266015": {
+    name: "Fabienne Ducry (杜霏安)",
+    dept: "Applied Sociology, Year 1",
+    hw1: { score: "A (85)", comments: "Well-designed DiD analysis of the ITA trade-expansion effect on Taiwan–Switzerland trade (241 product-year obs). Proper product and year fixed effects. Clear identification strategy based on pre-existing tariff status. Minor note: the HTML document title reads 'HW2' but the content is clearly HW1 material." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114266016": {
+    name: "Zoe Weaver (李淑頤)",
+    dept: "Applied Sociology, Year 1",
+    hw1: { score: "B (70)", comments: "Research question on TECO offices and bilateral trade flows is interesting and the code logic is appropriate. However, the submitted HTML contains only raw Stata commands without any compiled output, figures, or narrative text. Please resubmit by running: markstat using \"filename\", bundle" },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114266017": {
+    name: "Angus Boswell (黃翾文)",
+    dept: "Applied Sociology, Year 1",
+    hw1: { score: "A (85)", comments: "Well-organized R analysis of minimum wage effects on labor turnover across industrial, white-collar, and social-work sectors. Creative sector-by-sector visualizations using minimum wage changes as a color marker. Clear introduction framing the research context. Good narrative throughout." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114266018": {
+    name: "Marsh (黃英)",
+    dept: "Applied Sociology, Year 1",
+    hw1: { score: "A (85)", comments: "Very well-organized empirical record with numbered sections and thorough documentation. Meticulous sample construction (5,645 → 1,513) with explicit reasoning for each step, especially the decision to restrict to women aged 40+ to better capture completed fertility outcomes." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114266026": {
+    name: "Toby Harris (韓睿風)",
+    dept: "Applied Sociology, Year 1",
+    hw1: { score: "B (70)", comments: "Creative DiD design using Pew Research surveys (2013 vs. 2025) on Israeli public opinion toward Netanyahu. However, the submitted HTML contains only raw Stata commands without compiled output or embedded figures. Please resubmit using: markstat using \"filename\", bundle" },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114266806": {
+    name: "Laura Berger (白樂菡)",
+    dept: "Applied Sociology (Elective)",
+    hw1: { score: "A+ (95)", comments: "Outstanding professional-grade analysis using Thomson Reuters DealScan. Sophisticated multi-step Stata pipeline merging facility, pricing, lender-share, and company data files with clean output at each stage. Clean quasi-experimental identification using IFRS 9 adoption timing as the treatment." },
+    hw2: null, rg: null, fp: null, tp: null
+  },
+  "114300423": {
+    name: "Masahiro Takaoka (高岡昌寛)",
+    dept: "Business, MA (Elective)",
+    hw1: { score: "A (85)", comments: "Exceptionally clean R code with reusable modular cleaning functions and master translation tables (Japanese → English). Creative research question on geopolitical effects on Japanese prefecture tourism (25 monthly files, 47 prefectures). Professional structure and documentation throughout." },
+    hw2: null, rg: null, fp: null, tp: null
+  }
+};
+
+// ─── Grade badge helper ──────────────────────────────────────────────────────
+function gradeBadge(score) {
+  if (!score) return '';
+  const s = score.toLowerCase();
+  if (s.includes('a+'))   return '<span class="badge badge-aplus">A+</span>';
+  if (s.includes('a-'))   return '<span class="badge badge-amin">A−</span>';
+  if (s.includes('a'))    return '<span class="badge badge-a">A</span>';
+  if (s.includes('b+'))   return '<span class="badge badge-bplus">B+</span>';
+  if (s.includes('b'))    return '<span class="badge badge-b">B</span>';
+  return '<span class="badge badge-c">C</span>';
+}
+
+function gradeClass(score) {
+  if (!score) return '';
+  const s = score.toLowerCase();
+  if (s.includes('a+'))  return 'grade-a-plus';
+  if (s.includes('a-'))  return 'grade-a-min';
+  if (s.includes('a'))   return 'grade-a';
+  if (s.includes('b+'))  return 'grade-b-plus';
+  if (s.includes('b'))   return 'grade-b';
+  return 'grade-c';
+}
+
+// ─── Lookup ──────────────────────────────────────────────────────────────────
+function lookup() {
+  const raw = document.getElementById('sid-input').value.trim();
+  const errEl = document.getElementById('error-msg');
+  const resEl = document.getElementById('result-section');
+  errEl.style.display = 'none';
+
+  if (!raw) {
+    errEl.textContent = 'Please enter your student ID.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const data = GRADES[raw];
+  if (!data) {
+    errEl.textContent = 'Student ID not found. Please check the number and try again.';
+    errEl.style.display = 'block';
+    resEl.style.display = 'none';
+    return;
+  }
+
+  // Avatar initials
+  const initials = data.name.split(' ').slice(0, 2).map(w => w[0]).join('');
+  document.getElementById('res-avatar').textContent = initials;
+  document.getElementById('res-name').textContent = data.name;
+  document.getElementById('res-meta').textContent = raw + ' · ' + data.dept;
+
+  // Grades grid
+  const items = [
+    { label: 'HW 1',               key: 'hw1' },
+    { label: 'HW 2',               key: 'hw2' },
+    { label: 'Reading Group',       key: 'rg'  },
+    { label: 'Final Presentation',  key: 'fp'  },
+    { label: 'Term Paper',          key: 'tp'  },
+  ];
+  let gradeHTML = '';
+  items.forEach(it => {
+    const val = data[it.key];
+    const score = val ? val.score : null;
+    gradeHTML += `<div class="grade-cell">
+      <div class="label">${it.label}</div>
+      <div class="score ${score ? gradeClass(score) : 'pending'}">
+        ${score ? score : 'Pending'}
+      </div>
+      ${score ? gradeBadge(score) : ''}
+    </div>`;
+  });
+  document.getElementById('res-grades').innerHTML = gradeHTML;
+
+  // Comments
+  let commHTML = '<h3>Instructor Feedback</h3>';
+  items.forEach(it => {
+    const val = data[it.key];
+    if (val && val.comments) {
+      commHTML += `<div class="comment-block">
+        <div class="comment-label">${it.label}</div>
+        <p>${val.comments}</p>
+      </div>`;
+    }
+  });
+  const hasFeedback = items.some(it => data[it.key] && data[it.key].comments);
+  if (!hasFeedback) {
+    commHTML += '<p class="pending-notice">No feedback available yet.</p>';
+  }
+  document.getElementById('res-comments').innerHTML = commHTML;
+
+  resEl.style.display = 'block';
+  resEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Allow Enter key on the input
+document.getElementById('sid-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') lookup();
+});
+</script>
+</body>
+</html>
